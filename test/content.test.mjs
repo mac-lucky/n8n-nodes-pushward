@@ -191,6 +191,23 @@ test('numbers and booleans from an expression are coerced or refused', () => {
 	});
 });
 
+test('a number field refuses anything but a number or numeric text', () => {
+	for (const gaugeValue of [[], [5], true, {}]) {
+		assert.throws(() => activity('gauge', { gaugeValue }), /Value takes a number/);
+	}
+});
+
+test('a boolean field refuses anything but true or false', () => {
+	for (const charging of [1, 'True', 'on']) {
+		assert.throws(
+			() =>
+				widget('battery', { batteryDevices: { item: [{ name: 'Phone', level: 1, charging }] } }),
+			/Charging takes true or false/,
+		);
+	}
+	assert.throws(() => activity('countdown', { countdownAlarm: 0 }), /Alarm takes true or false/);
+});
+
 test('activity dates become Unix seconds', () => {
 	assert.deepEqual(activity('countdown', { countdownEndDate: '2026-11-20T18:00:00Z' }), {
 		template: 'countdown',
@@ -260,7 +277,10 @@ test('comma lists parse and a non-numeric point is refused', () => {
 	assert.deepEqual(widget('trend', { trendPoints: ' 1,2.5 ,-3 ' }).points, [1, 2.5, -3]);
 	assert.deepEqual(widget('trend', { trendPoints: [1, '2'] }).points, [1, 2]);
 	assert.equal(widget('trend', { trendPoints: ' , ' }).points, undefined);
+	assert.equal(widget('trend', { trendPoints: [] }).points, undefined);
 	assert.throws(() => widget('trend', { trendPoints: '1,two' }), /got "two"/);
+	assert.throws(() => widget('trend', { trendPoints: '1,,3' }), /Points has a blank entry/);
+	assert.throws(() => widget('trend', { trendPoints: [1, null, 3] }), /Points has a blank entry/);
 });
 
 test('Extra Content merges last and drops server-owned keys', () => {
@@ -390,6 +410,109 @@ test('a value the mapper refuses stops Start before the POST', async () => {
 		{ name: 'NodeOperationError', message: /not valid JSON/ },
 	);
 	assert.equal(posts, 0);
+});
+
+for (const [template, parameters] of [
+	['approval', { approvalOptions: {} }],
+	['board', {}],
+	['log', { logLines: { item: [{ text: '', level: '' }] } }],
+	['timeline', { timelineValue: { item: [{ name: '', value: 1 }] } }],
+]) {
+	test(`Start refuses ${template} without its required list and sends nothing`, async () => {
+		let posts = 0;
+		await assert.rejects(
+			requestFor(
+				operation('activity', 'start'),
+				{ slug: 'a', name: 'A', template, ...parameters },
+				{
+					httpRequestWithAuthentication: async () => {
+						posts += 1;
+					},
+				},
+			),
+			{ name: 'NodeOperationError', message: /template needs/ },
+		);
+		assert.equal(posts, 0);
+	});
+}
+
+test('Extra Content can supply a required key on Start', async () => {
+	let posts = 0;
+	const tiles = [{ label: 'CPU', value: '42' }];
+	const request = await requestFor(
+		operation('activity', 'start'),
+		{
+			slug: 'a',
+			name: 'A',
+			template: 'board',
+			contentFields: { extraContent: JSON.stringify({ tiles }) },
+		},
+		{
+			httpRequestWithAuthentication: async () => {
+				posts += 1;
+			},
+		},
+	);
+	assert.equal(posts, 1);
+	assert.deepEqual(request.body.content, { template: 'board', tiles });
+});
+
+test('Create refuses a template without its required content', async () => {
+	const create = (parameters) =>
+		requestFor(operation('widget', 'create'), { slug: 'a', name: 'A', ...parameters });
+
+	await assert.rejects(create({ template: 'battery' }), {
+		name: 'NodeOperationError',
+		message: /Battery template needs Devices/,
+	});
+	await assert.rejects(create({ template: 'flow', flowFlow: '{}' }), {
+		name: 'NodeOperationError',
+		message: /Flow template needs Flow \(JSON\)/,
+	});
+});
+
+test('each operation sends the dates its resource takes', async () => {
+	const at = '2026-11-20T18:00:00Z';
+	const seconds = Date.UTC(2026, 10, 20, 18) / 1000;
+	const rfc3339 = '2026-11-20T18:00:00.000Z';
+	const inContentFields = { template: 'countdown', contentFields: { countdownEndDate: at } };
+	const endDate = async (resource, value, parameters) =>
+		(
+			await requestFor(operation(resource, value), parameters, {
+				httpRequestWithAuthentication: async () => {},
+			})
+		).body.content.end_date;
+
+	assert.equal(
+		await endDate('activity', 'start', { slug: 'a', name: 'A', ...inContentFields }),
+		seconds,
+	);
+	assert.equal(await endDate('activity', 'update', inContentFields), seconds);
+	assert.equal(
+		await endDate('widget', 'create', {
+			slug: 'a',
+			name: 'A',
+			template: 'countdown',
+			countdownEndDate: at,
+		}),
+		rfc3339,
+	);
+	assert.equal(await endDate('widget', 'update', inContentFields), rfc3339);
+});
+
+test('Start, Update and End go out as PATCH', () => {
+	for (const [resource, value] of [
+		['activity', 'start'],
+		['activity', 'update'],
+		['activity', 'end'],
+		['widget', 'update'],
+	]) {
+		assert.equal(
+			operation(resource, value).routing.request.method,
+			'PATCH',
+			`${resource} ${value}`,
+		);
+	}
 });
 
 test('Update sends template plus only the added fields', async () => {

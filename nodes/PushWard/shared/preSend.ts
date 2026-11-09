@@ -11,6 +11,7 @@ import { activityTemplates } from '../resources/activity/templates';
 import { widgetTemplates } from '../resources/widget/templates';
 import { requiredParams, type ContentTemplate } from './contentTemplates';
 import {
+	assertRequiredContent,
 	mapActivityCreate,
 	mapActivityEnd,
 	mapActivityPatch,
@@ -88,7 +89,9 @@ function readContent(
 		}
 	}
 	const zone = context.getTimezone();
-	return mapContent(templates, template, values, (value) => toDate(value, zone));
+	const content = mapContent(templates, template, values, (value) => toDate(value, zone));
+	if (requiredAtTopLevel) assertRequiredContent(templates, template, content);
+	return content;
 }
 
 // Everything is mapped before the POST, so a value the mapper refuses sends nothing at all.

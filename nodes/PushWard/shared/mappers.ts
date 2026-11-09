@@ -39,11 +39,14 @@ function text(value: unknown): string | undefined {
 	return date.toJSON ? text(date.toJSON()) : JSON.stringify(value);
 }
 
-function list(value: unknown): string[] | undefined {
-	const entries = Array.isArray(value)
+const listEntries = (value: unknown) =>
+	(Array.isArray(value)
 		? value.map((item) => text(item) ?? '')
-		: (text(value) ?? '').split(',');
-	const items = entries.map((item) => item.trim()).filter(Boolean);
+		: (text(value) ?? '').split(',')
+	).map((item) => item.trim());
+
+function list(value: unknown): string[] | undefined {
+	const items = listEntries(value).filter(Boolean);
 	return items.length ? items : undefined;
 }
 
@@ -149,9 +152,25 @@ export function toUnixSeconds(value: unknown, zone: string): number | undefined 
 
 function toNumber(value: unknown, label: string): number | undefined {
 	if (isBlank(value) || (typeof value === 'string' && !value.trim())) return undefined;
-	const number = Number(value);
+	const number = typeof value === 'number' || typeof value === 'string' ? Number(value) : NaN;
 	if (!Number.isFinite(number)) throw new Error(`${label} takes a number, got "${text(value)}"`);
 	return number;
+}
+
+// A hole would shift every later point, so only a list with nothing in it counts as unset.
+function toNumberList(value: unknown, label: string): number[] | undefined {
+	if (!list(value)) return undefined;
+	return listEntries(value).map((entry) => {
+		if (!entry) throw new Error(`${label} has a blank entry in "${text(value)}"`);
+		return toNumber(entry, label) as number;
+	});
+}
+
+function toBoolean(value: unknown, label: string): boolean | undefined {
+	if (isBlank(value)) return undefined;
+	if (value === true || value === 'true') return true;
+	if (value === false || value === 'false') return false;
+	throw new Error(`${label} takes true or false, got "${text(value)}"`);
 }
 
 function parseJsonObject(value: unknown, label: string): IDataObject | undefined {
@@ -173,13 +192,13 @@ function mapField(field: ContentField, value: unknown, toDate: ToDate): unknown 
 		case 'number':
 			return toNumber(value, field.displayName);
 		case 'boolean':
-			return isBlank(value) ? undefined : value === true || value === 'true';
+			return toBoolean(value, field.displayName);
 		case 'dateTime':
 			return toDate(value);
 		case 'stringList':
 			return list(value);
 		case 'numberList':
-			return list(value)?.map((entry) => toNumber(entry, field.displayName));
+			return toNumberList(value, field.displayName);
 		case 'json':
 			return parseJsonObject(value, field.displayName);
 		case 'rows': {
@@ -237,6 +256,22 @@ export function mapContent(
 		),
 		...Object.fromEntries(Object.entries(extra).filter(([key]) => !serverOwnedKeys.includes(key))),
 	};
+}
+
+// n8n does not enforce required on a fixed collection, and an untouched JSON field holds {}.
+// This reads the mapped content so Extra Content can still supply the key.
+export function assertRequiredContent(
+	templates: ContentTemplate[],
+	name: string,
+	content: IDataObject,
+): void {
+	const isMissing = (value: unknown) =>
+		isBlank(value) || (typeof value === 'object' && !Object.keys(value as object).length);
+	const template = findTemplate(templates, name);
+	const missing = template.fields
+		.filter(({ required, key }) => required && isMissing(content[key]))
+		.map(({ displayName }) => displayName);
+	if (missing.length) throw new Error(`The ${template.name} template needs ${missing.join(', ')}`);
 }
 
 const nestedTarget = (additional: IDataObject) =>
