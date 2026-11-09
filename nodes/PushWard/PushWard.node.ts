@@ -1,8 +1,10 @@
 import { NodeConnectionTypes, type INodeType, type INodeTypeDescription } from 'n8n-workflow';
 import { accountDescription } from './resources/account';
+import { activityDescription } from './resources/activity';
 import { emailDescription } from './resources/email';
 import { notificationDescription } from './resources/notification';
 import { scheduledNotificationDescription } from './resources/scheduledNotification';
+import { widgetDescription } from './resources/widget';
 
 export class PushWard implements INodeType {
 	description: INodeTypeDescription = {
@@ -48,12 +50,20 @@ export class PushWard implements INodeType {
 						value: 'email',
 					},
 					{
+						name: 'Live Activity',
+						value: 'activity',
+					},
+					{
 						name: 'Notification',
 						value: 'notification',
 					},
 					{
 						name: 'Scheduled Notification',
 						value: 'scheduledNotification',
+					},
+					{
+						name: 'Widget',
+						value: 'widget',
 					},
 				],
 				default: 'notification',
@@ -62,6 +72,8 @@ export class PushWard implements INodeType {
 			...scheduledNotificationDescription,
 			...emailDescription,
 			...accountDescription,
+			...activityDescription,
+			...widgetDescription,
 		],
 	};
 }

@@ -1,4 +1,10 @@
-import { tryToParseDateTime, type IDataObject } from 'n8n-workflow';
+import { jsonParse, tryToParseDateTime, type IDataObject } from 'n8n-workflow';
+import {
+	findTemplate,
+	paramName,
+	type ContentField,
+	type ContentTemplate,
+} from './contentTemplates';
 
 export interface Mapped {
 	body?: IDataObject;
@@ -127,9 +133,161 @@ export function notificationOptions(
 }
 
 // A picker value has no offset, so it is read in the workflow time zone.
-export function toRfc3339(value: unknown, zone: string): string | undefined {
+function parseDate(value: unknown, zone: string) {
 	const source = text(value);
-	return source === undefined ? undefined : (tryToParseDateTime(source, zone).toISO() as string);
+	return source === undefined ? undefined : tryToParseDateTime(source, zone);
+}
+
+export function toRfc3339(value: unknown, zone: string): string | undefined {
+	return parseDate(value, zone)?.toISO() as string | undefined;
+}
+
+export function toUnixSeconds(value: unknown, zone: string): number | undefined {
+	const date = parseDate(value, zone);
+	return date && Math.floor(date.toSeconds());
+}
+
+function toNumber(value: unknown, label: string): number | undefined {
+	if (isBlank(value) || (typeof value === 'string' && !value.trim())) return undefined;
+	const number = Number(value);
+	if (!Number.isFinite(number)) throw new Error(`${label} takes a number, got "${text(value)}"`);
+	return number;
+}
+
+function parseJsonObject(value: unknown, label: string): IDataObject | undefined {
+	if (isBlank(value)) return undefined;
+	const parsed =
+		typeof value === 'string'
+			? jsonParse<unknown>(value, { errorMessage: `${label} is not valid JSON` })
+			: value;
+	if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+		throw new Error(`${label} must be a JSON object`);
+	}
+	return parsed as IDataObject;
+}
+
+type ToDate = (value: unknown) => string | number | undefined;
+
+function mapField(field: ContentField, value: unknown, toDate: ToDate): unknown {
+	switch (field.type) {
+		case 'number':
+			return toNumber(value, field.displayName);
+		case 'boolean':
+			return isBlank(value) ? undefined : value === true || value === 'true';
+		case 'dateTime':
+			return toDate(value);
+		case 'stringList':
+			return list(value);
+		case 'numberList':
+			return list(value)?.map((entry) => toNumber(entry, field.displayName));
+		case 'json':
+			return parseJsonObject(value, field.displayName);
+		case 'rows': {
+			const rows = (((value as IDataObject | undefined)?.item ?? []) as IDataObject[])
+				.map((row) => mapFields(field.fields ?? [], (sub) => row[sub.key], toDate))
+				.filter((row) => Object.keys(row).length);
+			if (field.keyedByName) {
+				const entries = rows
+					.filter((row) => row.name !== undefined && row.value !== undefined)
+					.map((row) => [row.name as string, row.value]);
+				return entries.length ? Object.fromEntries(entries) : undefined;
+			}
+			return rows.length ? rows : undefined;
+		}
+		default:
+			return text(value);
+	}
+}
+
+function mapFields(
+	fields: ContentField[],
+	read: (field: ContentField) => unknown,
+	toDate: ToDate,
+): IDataObject {
+	return compact(
+		Object.fromEntries(
+			fields.map((field) => [field.key, mapField(field, read(field), toDate)]),
+		) as IDataObject,
+	);
+}
+
+const serverOwnedKeys = [
+	'warning_pushed',
+	'snoozed_until',
+	'answer',
+	'answer_round',
+	'paused_at',
+	'paused_seconds',
+	'log_backlog',
+];
+
+export function mapContent(
+	templates: ContentTemplate[],
+	name: string,
+	values: IDataObject,
+	toDate: ToDate,
+): IDataObject {
+	const extra = parseJsonObject(values.extraContent, 'Extra Content') ?? {};
+	return {
+		template: name,
+		...mapFields(
+			findTemplate(templates, name).fields,
+			({ key }) => values[paramName(name, key)],
+			toDate,
+		),
+		...Object.fromEntries(Object.entries(extra).filter(([key]) => !serverOwnedKeys.includes(key))),
+	};
+}
+
+const nestedTarget = (additional: IDataObject) =>
+	mapTarget((additional.target as IDataObject | undefined)?.recipients as IDataObject | undefined);
+
+export function mapActivityCreate(
+	slug: unknown,
+	name: unknown,
+	additional: IDataObject,
+): IDataObject {
+	return compact({
+		slug: text(slug),
+		name: text(name),
+		priority: toNumber(additional.priority, 'Priority'),
+		ended_ttl: toNumber(additional.endedTtl, 'Ended TTL'),
+		stale_ttl: toNumber(additional.staleTtl, 'Stale TTL'),
+		dismissal_ttl: toNumber(additional.dismissalTtl, 'Dismissal TTL'),
+		target: nestedTarget(additional),
+	});
+}
+
+export function mapActivityPatch(content: IDataObject, additional: IDataObject): IDataObject {
+	return compact({ content, sound: text(additional.sound) });
+}
+
+export function mapActivityEnd(additional: IDataObject): IDataObject {
+	return compact({ dismissal_ttl: toNumber(additional.dismissalTtl, 'Dismissal TTL') });
+}
+
+const widgetSettings = (additional: IDataObject) => ({
+	push_throttle: toNumber(additional.pushThrottle, 'Push Throttle'),
+	stale_after: toNumber(additional.staleAfter, 'Stale After'),
+});
+
+export function mapWidgetCreate(
+	slug: unknown,
+	name: unknown,
+	content: IDataObject,
+	additional: IDataObject,
+): IDataObject {
+	return compact({
+		slug: text(slug),
+		name: text(name),
+		content,
+		...widgetSettings(additional),
+		target: nestedTarget(additional),
+	});
+}
+
+export function mapWidgetPatch(content: IDataObject, additional: IDataObject): IDataObject {
+	return compact({ content, name: text(additional.name), ...widgetSettings(additional) });
 }
 
 export function mapSchedule(schedule: IDataObject, zone: string): Mapped {

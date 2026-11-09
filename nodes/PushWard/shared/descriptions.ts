@@ -7,6 +7,44 @@ import type { IDisplayOptions, INodeProperties } from 'n8n-workflow';
 export const valueIfSet =
 	'={{ $value === "" || $value == null ? undefined : $value.isLuxonDateTime ? ($value.invalid ? "Invalid DateTime" : DateTime.fromMillis($value.ts, { zone: $value.o }).toISO()) : typeof $value === "object" && !$value.toJSON ? JSON.stringify($value) : String($value) }}';
 
+export const targetField: INodeProperties = {
+	displayName: 'Organization Target',
+	name: 'target',
+	type: 'fixedCollection',
+	placeholder: 'Add Target',
+	default: {},
+	description: 'Organization keys only: who receives it, narrowing the routing rules',
+	options: [
+		{
+			displayName: 'Recipients',
+			name: 'recipients',
+			values: [
+				{
+					displayName: 'Device Tags',
+					name: 'tags',
+					type: 'string',
+					default: '',
+					description: 'Comma-separated device tag names, up to 20',
+				},
+				{
+					displayName: 'Groups',
+					name: 'groups',
+					type: 'string',
+					default: '',
+					description: 'Comma-separated group names, up to 20',
+				},
+				{
+					displayName: 'Members',
+					name: 'members',
+					type: 'string',
+					default: '',
+					description: 'Comma-separated member user IDs, up to 100',
+				},
+			],
+		},
+	],
+};
+
 // The content of a notification, shared by Send and scheduled Create.
 export function notificationFields(show: IDisplayOptions['show']): INodeProperties[] {
 	const displayOptions = { show };
@@ -377,43 +415,7 @@ export function notificationFields(show: IDisplayOptions['show']): INodeProperti
 						},
 					],
 				},
-				{
-					displayName: 'Organization Target',
-					name: 'target',
-					type: 'fixedCollection',
-					placeholder: 'Add Target',
-					default: {},
-					description: 'Organization keys only: who receives it, narrowing the routing rules',
-					options: [
-						{
-							displayName: 'Recipients',
-							name: 'recipients',
-							values: [
-								{
-									displayName: 'Device Tags',
-									name: 'tags',
-									type: 'string',
-									default: '',
-									description: 'Comma-separated device tag names, up to 20',
-								},
-								{
-									displayName: 'Groups',
-									name: 'groups',
-									type: 'string',
-									default: '',
-									description: 'Comma-separated group names, up to 20',
-								},
-								{
-									displayName: 'Members',
-									name: 'members',
-									type: 'string',
-									default: '',
-									description: 'Comma-separated member user IDs, up to 100',
-								},
-							],
-						},
-					],
-				},
+				targetField,
 				{
 					displayName: 'Send Push',
 					name: 'push',
