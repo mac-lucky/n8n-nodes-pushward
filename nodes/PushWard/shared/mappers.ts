@@ -45,7 +45,7 @@ const listEntries = (value: unknown) =>
 		: (text(value) ?? '').split(',')
 	).map((item) => item.trim());
 
-function list(value: unknown): string[] | undefined {
+export function list(value: unknown): string[] | undefined {
 	const items = listEntries(value).filter(Boolean);
 	return items.length ? items : undefined;
 }
