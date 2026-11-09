@@ -27,7 +27,7 @@ export class PushWardApi implements ICredentialType {
 		},
 		{
 			displayName: 'Encryption Key',
-			name: 'encryptionKey',
+			name: 'encryptionSecret',
 			type: 'string',
 			typeOptions: { password: true },
 			default: '',

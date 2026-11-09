@@ -145,7 +145,7 @@ test('Send and scheduled Create seal last and keep everything else', async () =>
 
 		let request = assembled();
 		for (const step of steps) {
-			request = await step.call(context({ apiKey: 'k', encryptionKey: keyHex }), request);
+			request = await step.call(context({ apiKey: 'k', encryptionSecret: keyHex }), request);
 		}
 
 		const { encrypted, ...rest } = request.body;
@@ -161,9 +161,9 @@ test('Send and scheduled Create seal last and keep everything else', async () =>
 });
 
 for (const [label, credentials, additional] of [
-	['with no key', { apiKey: 'k', encryptionKey: '' }, {}],
+	['with no key', { apiKey: 'k', encryptionSecret: '' }, {}],
 	['with a credential saved before the field existed', { apiKey: 'k' }, {}],
-	['with a key and Encrypt off', { apiKey: 'k', encryptionKey: keyHex }, { encrypt: false }],
+	['with a key and Encrypt off', { apiKey: 'k', encryptionSecret: keyHex }, { encrypt: false }],
 ]) {
 	test(`the body is left alone ${label}`, async () => {
 		const request = assembled();
@@ -180,7 +180,7 @@ for (const [label, badKey] of [
 ]) {
 	test(`a key that is ${label} stops the send without naming the key`, async () => {
 		await assert.rejects(
-			sealNotification.call(context({ encryptionKey: badKey }), assembled()),
+			sealNotification.call(context({ encryptionSecret: badKey }), assembled()),
 			(error) => {
 				assert.equal(error.name, 'NodeOperationError');
 				assert.match(error.message, /64 hexadecimal/);
@@ -198,7 +198,7 @@ test('a sealed notification with no title or body is refused', async () => {
 		{ title: 'T', body: undefined },
 	]) {
 		await assert.rejects(
-			sealNotification.call(context({ encryptionKey: keyHex }), { body, headers: {} }),
+			sealNotification.call(context({ encryptionSecret: keyHex }), { body, headers: {} }),
 			{ name: 'NodeOperationError', message: /Title and a Body/ },
 		);
 	}
@@ -206,7 +206,7 @@ test('a sealed notification with no title or body is refused', async () => {
 
 test('the credential field is optional and masked', () => {
 	const { properties, authenticate, test: credentialTest } = new PushWardApi();
-	const field = properties.find(({ name }) => name === 'encryptionKey');
+	const field = properties.find(({ name }) => name === 'encryptionSecret');
 
 	assert.equal(field.type, 'string');
 	assert.deepEqual(field.typeOptions, { password: true });

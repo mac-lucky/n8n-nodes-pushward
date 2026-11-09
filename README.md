@@ -43,7 +43,7 @@ Under Additional Fields:
 
 Put a key in the credential's Encryption Key field and Send and scheduled Create seal the title, subtitle, body and URL on the n8n machine (AES-256-GCM, format `pw1`). PushWard stores and forwards only the sealed text. Create the key in the app under Settings > End-to-End Encryption (1.17 or later) and copy the 64 hex characters. Devices on older builds show a placeholder.
 
-Level, buttons, metadata and everything else stay readable, so don't put secrets in button labels. Live Activities, widgets and emails are never sealed.
+Level, buttons, metadata and everything else stay readable, so don't put secrets in button labels. A typed reply isn't sealed either: PushWard stores it as plain text for 30 days. Live Activities, widgets and emails are never sealed.
 
 Set Encrypt to off under Additional Fields to send one notification in the clear. A key that isn't 64 hex characters stops the item with an error and nothing is sent; the node never falls back to plain text. The sealed text holds about 2.2 KB. Past that the API refuses the send. It can't read a sealed title or subtitle, so it can't refuse one over 256 characters: the app cuts it to 256 when it opens the notification.
 
@@ -53,7 +53,7 @@ With an organization key, every member's device needs the organization's key, an
 
 PushWard Trigger polls `GET /notifications/answers` and starts the workflow once per answer, oldest first. Each item has `notification_id`, `action_id`, `text` for a typed reply, `answered_at`, and `collapse_id` and `thread_id` when the notification had them.
 
-Only buttons without a URL and typed replies appear in the feed. A button with a URL opens or calls it and PushWard never hears about it.
+Only buttons without a URL and typed replies appear in the feed. A button with a URL opens or calls it and PushWard never hears about it. The Acknowledge button PushWard adds counts as a tap too and arrives with `action_id` `pw_ack`, so use Action IDs if the trigger shouldn't run for those.
 
 The feed is per integration key: the trigger only sees answers to notifications sent with the same key, so use one credential for the Send node and the trigger.
 

@@ -80,12 +80,12 @@ export const sealNotification: PreSendAction = async function (
 	this: IExecuteSingleFunctions,
 	requestOptions: IHttpRequestOptions,
 ) {
-	const { encryptionKey } = await this.getCredentials<{ encryptionKey?: string }>('pushWardApi');
-	if (!encryptionKey || additionalFields(this).encrypt === false) return requestOptions;
+	const { encryptionSecret } = await this.getCredentials<{ encryptionSecret?: string }>('pushWardApi');
+	if (!encryptionSecret || additionalFields(this).encrypt === false) return requestOptions;
 	return {
 		...requestOptions,
 		body: refusing(this, () =>
-			sealNotificationBody(encryptionKey, requestOptions.body as IDataObject),
+			sealNotificationBody(encryptionSecret, requestOptions.body as IDataObject),
 		),
 	};
 };
