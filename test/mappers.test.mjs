@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
+import { DateTime } from 'luxon';
+
 import {
 	idempotencyHeaders,
 	mapAcknowledge,
@@ -232,8 +234,48 @@ test('dates become RFC 3339 text', () => {
 	assert.match(snapshot, rfc3339);
 	assert.equal(instant(snapshot), Date.UTC(2026, 0, 15, 9));
 
+	assert.equal(
+		instant(toRfc3339(new Date(Date.UTC(2026, 0, 15, 9)), 'Europe/Warsaw')),
+		Date.UTC(2026, 0, 15, 9),
+	);
+	assert.equal(
+		instant(toRfc3339(DateTime.fromMillis(Date.UTC(2026, 0, 15, 9)), 'UTC')),
+		Date.UTC(2026, 0, 15, 9),
+	);
+
 	assert.equal(toRfc3339('', 'UTC'), undefined);
 	assert.equal(toRfc3339(undefined, 'UTC'), undefined);
+});
+
+test('dates in mapped string fields become ISO text', () => {
+	const at = (value) => mapMetadata([{ key: 'at', value }]).at;
+
+	assert.equal(at(new Date(0)), '1970-01-01T00:00:00.000Z');
+	assert.equal(at(DateTime.fromMillis(0, { zone: 60 })), '1970-01-01T01:00:00.000+01:00');
+	// the vm expression engine passes a DateTime as a plain snapshot
+	assert.equal(at({ isLuxonDateTime: true, ts: 0, o: 60 }), '1970-01-01T01:00:00.000+01:00');
+	assert.equal(at({ isLuxonDateTime: true, invalid: { reason: 'x' }, ts: 0 }), 'Invalid DateTime');
+	assert.equal(at({ a: 1 }), '{"a":1}');
+
+	assert.deepEqual(mapActions([{ id: 'ok', title: 'OK', body: new Date(0) }]), [
+		{ id: 'ok', title: 'OK', body: '1970-01-01T00:00:00.000Z' },
+	]);
+	assert.equal(
+		mapAcknowledge({ callbackUrl: { isLuxonDateTime: true, ts: 0, o: 0 } }).callback_url,
+		'1970-01-01T00:00:00.000Z',
+	);
+});
+
+test('lists also take an array from an expression', () => {
+	assert.deepEqual(mapAcknowledge({ tags: ['deploys', ' oncall', ''] }).tags, [
+		'deploys',
+		'oncall',
+	]);
+	assert.deepEqual(mapTarget({ groups: ['oncall', 'sre'], members: [] }), {
+		groups: ['oncall', 'sre'],
+	});
+	assert.deepEqual(parseSnooze([15, 60]), [15, 60]);
+	assert.throws(() => parseSnooze([15, 'soon']), /got "soon"/);
 });
 
 test('a date that cannot be read is refused', () => {

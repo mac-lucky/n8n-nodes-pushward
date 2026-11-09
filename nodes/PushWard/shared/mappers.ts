@@ -11,16 +11,33 @@ function compact(fields: IDataObject): IDataObject {
 	return Object.fromEntries(Object.entries(fields).filter(([, value]) => !isBlank(value)));
 }
 
+// Objects become JSON text unless they have a text form of their own (dates). n8n's vm expression
+// engine passes a DateTime as a plain snapshot, and an invalid one holds the current time in ts.
 function text(value: unknown): string | undefined {
 	if (isBlank(value)) return undefined;
-	return typeof value === 'object' ? JSON.stringify(value) : String(value);
+	if (typeof value !== 'object') return String(value);
+	const date = value as {
+		isLuxonDateTime?: boolean;
+		invalid?: unknown;
+		ts?: number;
+		o?: number;
+		toJSON?: () => unknown;
+	};
+	if (date.isLuxonDateTime) {
+		return date.invalid
+			? 'Invalid DateTime'
+			: tryToParseDateTime(new Date(date.ts as number))
+					.setZone(date.o)
+					.toISO();
+	}
+	return date.toJSON ? text(date.toJSON()) : JSON.stringify(value);
 }
 
 function list(value: unknown): string[] | undefined {
-	const items = (text(value) ?? '')
-		.split(',')
-		.map((item) => item.trim())
-		.filter(Boolean);
+	const entries = Array.isArray(value)
+		? value.map((item) => text(item) ?? '')
+		: (text(value) ?? '').split(',');
+	const items = entries.map((item) => item.trim()).filter(Boolean);
 	return items.length ? items : undefined;
 }
 
@@ -109,17 +126,10 @@ export function notificationOptions(
 	};
 }
 
-// A picker value has no offset, so it is read in the workflow time zone. n8n's vm expression
-// engine passes a DateTime as a plain snapshot, and an invalid one holds the current time in ts.
+// A picker value has no offset, so it is read in the workflow time zone.
 export function toRfc3339(value: unknown, zone: string): string | undefined {
-	if (isBlank(value)) return undefined;
-	const date = value as { isLuxonDateTime?: boolean; invalid?: unknown; ts?: number };
-	const source = date.isLuxonDateTime
-		? date.invalid
-			? 'Invalid DateTime'
-			: new Date(date.ts as number)
-		: value;
-	return tryToParseDateTime(source, zone).toISO() as string;
+	const source = text(value);
+	return source === undefined ? undefined : (tryToParseDateTime(source, zone).toISO() as string);
 }
 
 export function mapSchedule(schedule: IDataObject, zone: string): Mapped {

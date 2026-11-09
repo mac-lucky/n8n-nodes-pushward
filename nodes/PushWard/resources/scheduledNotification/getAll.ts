@@ -29,7 +29,10 @@ export const scheduledNotificationGetManyDescription: INodeProperties[] = [
 					properties: {
 						continue: '={{ !!$response.body?.next_cursor }}',
 						request: {
+							// n8n replaces the whole query with this one, so status and limit are repeated
 							qs: {
+								status: '={{ $request.qs?.status }}',
+								limit: '={{ $request.qs?.limit }}',
 								cursor: '={{ $response.body?.next_cursor }}',
 							},
 						},
