@@ -89,6 +89,25 @@ const operation = (resource, value) =>
 		)
 		.options.find((option) => option.value === value);
 
+test('Send and scheduled Create offer Encrypt, on by default', () => {
+	for (const [resource, op] of [
+		['notification', 'send'],
+		['scheduledNotification', 'create'],
+	]) {
+		const encrypt = description.properties
+			.find(
+				({ name, displayOptions }) =>
+					name === 'additionalFields' &&
+					displayOptions.show.resource.includes(resource) &&
+					displayOptions.show.operation.includes(op),
+			)
+			.options.find(({ name }) => name === 'encrypt');
+
+		assert.equal(encrypt.type, 'boolean');
+		assert.equal(encrypt.default, true);
+	}
+});
+
 const context = (credentials, additionalFields = {}) => ({
 	getCredentials: async (name) => {
 		assert.equal(name, 'pushWardApi');
