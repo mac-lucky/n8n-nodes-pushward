@@ -47,7 +47,7 @@ export const widgetDescription: INodeProperties[] = [
 			{
 				name: 'Create or Replace',
 				value: 'create',
-				description: 'Create a widget or fully overwrite the one with this slug',
+				description: 'Create a widget or overwrite it. Devices are not told to reload.',
 				action: 'Create or replace a widget',
 				routing: {
 					request: {

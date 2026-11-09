@@ -248,15 +248,20 @@ export function mapContent(
 ): IDataObject {
 	const extra = parseJsonObject(values.extraContent, 'Extra Content') ?? {};
 	return {
-		template: name,
-		...mapFields(
-			findTemplate(templates, name).fields,
-			({ key }) => values[paramName(name, key)],
-			toDate,
-		),
+		// A blank template is Keep Current on Update: sending one would replace the stored layout.
+		...(name && {
+			template: name,
+			...mapFields(
+				findTemplate(templates, name).fields,
+				({ key }) => values[paramName(name, key)],
+				toDate,
+			),
+		}),
 		...Object.fromEntries(Object.entries(extra).filter(([key]) => !serverOwnedKeys.includes(key))),
 	};
 }
+
+const contentIfAny = (content: IDataObject) => (Object.keys(content).length ? content : undefined);
 
 // n8n does not enforce required on a fixed collection, and an untouched JSON field holds {}.
 // This reads the mapped content so Extra Content can still supply the key.
@@ -294,7 +299,7 @@ export function mapActivityCreate(
 }
 
 export function mapActivityPatch(content: IDataObject, additional: IDataObject): IDataObject {
-	return compact({ content, sound: text(additional.sound) });
+	return compact({ content: contentIfAny(content), sound: text(additional.sound) });
 }
 
 export function mapActivityEnd(additional: IDataObject): IDataObject {
@@ -322,7 +327,11 @@ export function mapWidgetCreate(
 }
 
 export function mapWidgetPatch(content: IDataObject, additional: IDataObject): IDataObject {
-	return compact({ content, name: text(additional.name), ...widgetSettings(additional) });
+	return compact({
+		content: contentIfAny(content),
+		name: text(additional.name),
+		...widgetSettings(additional),
+	});
 }
 
 export function mapSchedule(schedule: IDataObject, zone: string): Mapped {

@@ -194,16 +194,36 @@ export function contentProperties(
 		].sort(alphabetical),
 	});
 
+	const templateOptions = templates.map(({ name, value, description }) => ({
+		name,
+		value,
+		description,
+	}));
+
 	return [
 		{
 			displayName: 'Template',
 			name: 'template',
 			type: 'options',
 			noDataExpression: true,
-			displayOptions: { show: shownFor(createOperation, 'update') },
-			options: templates.map(({ name, value, description }) => ({ name, value, description })),
+			displayOptions: { show: shownFor(createOperation) },
+			options: templateOptions,
 			default: defaultTemplate,
 			description: 'Layout of the content',
+		},
+		{
+			displayName: 'Template',
+			name: 'template',
+			type: 'options',
+			noDataExpression: true,
+			displayOptions: { show: shownFor('update') },
+			options: [
+				{ name: 'Keep Current', value: '', description: 'Leave the content and layout as they are' },
+				...templateOptions,
+			],
+			default: '',
+			description:
+				'Pick the template it already uses to change its fields. Picking another one switches the layout and drops the data the old one kept.',
 		},
 		...templates.flatMap((template) =>
 			template.fields

@@ -515,6 +515,39 @@ test('Start, Update and End go out as PATCH', () => {
 	}
 });
 
+test('Keep Current sends no template, so the stored layout survives', async () => {
+	assert.deepEqual(
+		await requestFor(operation('activity', 'update'), {
+			template: '',
+			contentFields: { extraContent: '{"state":"Halfway"}' },
+		}),
+		{ body: { content: { state: 'Halfway' } }, headers: mergePatch },
+	);
+	assert.deepEqual(
+		await requestFor(operation('widget', 'update'), {
+			template: '',
+			contentFields: {},
+			additionalFields: { name: 'Energy' },
+		}),
+		{ body: { name: 'Energy' }, headers: mergePatch },
+	);
+});
+
+test('Update defaults to Keep Current and Start and Create to a real template', () => {
+	const defaultOf = (resource, operationName) =>
+		description.properties.find(
+			({ name, displayOptions }) =>
+				name === 'template' &&
+				displayOptions.show.resource.includes(resource) &&
+				displayOptions.show.operation.includes(operationName),
+		).default;
+
+	assert.equal(defaultOf('activity', 'update'), '');
+	assert.equal(defaultOf('widget', 'update'), '');
+	assert.equal(defaultOf('activity', 'start'), 'generic');
+	assert.equal(defaultOf('widget', 'create'), 'value');
+});
+
 test('Update sends template plus only the added fields', async () => {
 	assert.deepEqual(
 		await requestFor(operation('activity', 'update'), {

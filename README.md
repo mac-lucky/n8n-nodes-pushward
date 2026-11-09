@@ -19,6 +19,10 @@ The package adds two nodes, PushWard and PushWard Trigger.
 
 Start creates the activity when it doesn't exist yet and sets it ongoing. Pick a template and the fields follow it; Extra Content takes JSON for anything the form doesn't have.
 
+Update starts on Keep Current, which leaves the template alone. To change fields, pick the template the item already uses. Picking a different one switches the layout, and a Live Activity then loses the tiles, log lines or history the old one held.
+
+Create or Replace stores a widget but doesn't tell devices to reload it. For anything on a schedule use Update, which does.
+
 ## Send options
 
 Send and scheduled Create share these. Title (up to 256 characters) and Body (up to 4096) are required. The API refuses a longer value and the node does not shorten it for you; encrypted sends differ, see Encryption. A field you added but left blank is not sent, and neither is an expression that comes out empty. Every notification carries `source` and `source_display_name` set to `n8n`, which is the sender name you see in the app.
@@ -45,13 +49,13 @@ Put a key in the credential's Encryption Key field and Send and scheduled Create
 
 Level, buttons, metadata and everything else stay readable, so don't put secrets in button labels. A typed reply isn't sealed either: PushWard stores it as plain text for 30 days. Live Activities, widgets and emails are never sealed.
 
-Set Encrypt to off under Additional Fields to send one notification in the clear. A key that isn't 64 hex characters stops the item with an error and nothing is sent; the node never falls back to plain text. The sealed text holds about 2.2 KB. Past that the API refuses the send. It can't read a sealed title or subtitle, so it can't refuse one over 256 characters: the app cuts it to 256 when it opens the notification.
+Set Encrypt to off under Additional Fields to send one notification in the clear. A key that isn't 64 hex characters stops the item with an error and nothing is sent; the node never falls back to plain text. The sealed text holds about 2.2 KB. Past that the API refuses the send. It can't read sealed fields, so it can't refuse a title or subtitle over 256 characters or a malformed URL: the app cuts the title and subtitle to 256 when it opens the notification, and drops a URL it can't use.
 
 With an organization key, every member's device needs the organization's key, and a send gets 422 `notification.encryption_unavailable` if PushWard has encryption turned off for organizations.
 
 ## Trigger
 
-PushWard Trigger polls `GET /notifications/answers` and starts the workflow once per answer, oldest first. Each item has `notification_id`, `action_id`, `text` for a typed reply, `answered_at`, and `collapse_id` and `thread_id` when the notification had them.
+PushWard Trigger polls `GET /notifications/answers` and outputs one item per answer, oldest first, so answers that arrive between two polls share one execution. Each item has `notification_id`, `action_id`, `text` for a typed reply, `answered_at`, and `collapse_id` and `thread_id` when the notification had them.
 
 Only buttons without a URL and typed replies appear in the feed. A button with a URL opens or calls it and PushWard never hears about it. The Acknowledge button PushWard adds counts as a tap too and arrives with `action_id` `pw_ack`, so use Action IDs if the trigger shouldn't run for those.
 
