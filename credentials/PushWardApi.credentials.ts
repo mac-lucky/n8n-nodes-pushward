@@ -25,6 +25,15 @@ export class PushWardApi implements ICredentialType {
 			default: '',
 			description: 'Integration key from the PushWard app, under Settings > Integration Key',
 		},
+		{
+			displayName: 'Encryption Key',
+			name: 'encryptionKey',
+			type: 'string',
+			typeOptions: { password: true },
+			default: '',
+			description:
+				'The 64-character hex key from the PushWard app, under Settings > End-to-End Encryption. When set, notifications are sealed with it.',
+		},
 	];
 
 	authenticate: IAuthenticateGeneric = {

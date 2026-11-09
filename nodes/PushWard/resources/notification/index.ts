@@ -1,6 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 import { notificationFields, valueIfSet } from '../../shared/descriptions';
-import { applyNotificationOptions } from '../../shared/preSend';
+import { applyNotificationOptions, sealNotification } from '../../shared/preSend';
 
 const showOnlyForNotifications = {
 	resource: ['notification'],
@@ -91,7 +91,7 @@ export const notificationDescription: INodeProperties[] = [
 						},
 					},
 					send: {
-						preSend: [applyNotificationOptions],
+						preSend: [applyNotificationOptions, sealNotification],
 					},
 				},
 			},

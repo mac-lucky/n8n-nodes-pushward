@@ -298,6 +298,13 @@ export function notificationFields(show: IDisplayOptions['show']): INodeProperti
 					},
 				},
 				{
+					displayName: 'Encrypt',
+					name: 'encrypt',
+					type: 'boolean',
+					default: true,
+					description: "Whether to seal with the credential's Encryption Key when one is set",
+				},
+				{
 					displayName: 'Icon URL',
 					name: 'iconUrl',
 					type: 'string',

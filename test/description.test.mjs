@@ -127,6 +127,7 @@ test('Return All repeats status and page size next to the cursor', () => {
 
 async function requestFor({ routing }, parameters) {
 	const context = {
+		getCredentials: async () => ({ apiKey: 'k' }),
 		getNode: () => nodeWith(parameters),
 		getNodeParameter: (name, fallback) => parameters[name] ?? fallback,
 		getTimezone: () => 'UTC',

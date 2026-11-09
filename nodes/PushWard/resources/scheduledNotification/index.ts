@@ -1,5 +1,5 @@
 import type { INodeProperties } from 'n8n-workflow';
-import { applyNotificationOptions, applySchedule } from '../../shared/preSend';
+import { applyNotificationOptions, applySchedule, sealNotification } from '../../shared/preSend';
 import { scheduledNotificationCreateDescription } from './create';
 import { scheduledNotificationGetManyDescription } from './getAll';
 
@@ -54,7 +54,7 @@ export const scheduledNotificationDescription: INodeProperties[] = [
 						},
 					},
 					send: {
-						preSend: [applyNotificationOptions, applySchedule],
+						preSend: [applyNotificationOptions, applySchedule, sealNotification],
 					},
 				},
 			},

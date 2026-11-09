@@ -10,6 +10,7 @@ import {
 import { activityTemplates } from '../resources/activity/templates';
 import { widgetTemplates } from '../resources/widget/templates';
 import { requiredParams, type ContentTemplate } from './contentTemplates';
+import { sealNotificationBody } from './encryption';
 import {
 	assertRequiredContent,
 	mapActivityCreate,
@@ -74,6 +75,20 @@ export const applySchedule = mergeInto((context) =>
 
 const additionalFields = (context: IExecuteSingleFunctions) =>
 	context.getNodeParameter('additionalFields', {}) as IDataObject;
+
+export const sealNotification: PreSendAction = async function (
+	this: IExecuteSingleFunctions,
+	requestOptions: IHttpRequestOptions,
+) {
+	const { encryptionKey } = await this.getCredentials<{ encryptionKey?: string }>('pushWardApi');
+	if (!encryptionKey || additionalFields(this).encrypt === false) return requestOptions;
+	return {
+		...requestOptions,
+		body: refusing(this, () =>
+			sealNotificationBody(encryptionKey, requestOptions.body as IDataObject),
+		),
+	};
+};
 
 function readContent(
 	context: IExecuteSingleFunctions,
