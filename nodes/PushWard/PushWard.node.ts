@@ -14,7 +14,7 @@ export class PushWard implements INodeType {
 		group: ['output'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: 'Send push notifications with PushWard',
+		description: 'Send notifications and drive Live Activities and widgets with PushWard',
 		defaults: {
 			name: 'PushWard',
 		},
