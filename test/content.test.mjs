@@ -806,7 +806,8 @@ test('the Content Fields collections hold the optional fields, Update every fiel
 	assert.equal(update.includes('approvalUrl'), false);
 	assert.equal(update.includes('genericUrl'), true);
 	assert.equal(update.includes('checklistState'), false);
-	assert.equal(update.includes('checklistUrl'), true);
+	assert.equal(start.includes('checklistUrl'), false);
+	assert.equal(update.includes('checklistUrl'), false);
 
 	for (const option of contentFields('activity', 'update')) {
 		assert.equal(option.required, undefined, option.name);

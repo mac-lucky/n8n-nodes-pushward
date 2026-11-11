@@ -570,10 +570,10 @@ const activityCommon: ContentField[] = [
 	},
 ];
 
-// The API refuses url on an approval card and writes a checklist's state from its ticks.
-const dropped: Record<string, string> = { approval: 'url', checklist: 'state' };
+// The API refuses url on an approval card or a checklist, and writes a checklist's state from its ticks.
+const dropped: Record<string, string[]> = { approval: ['url'], checklist: ['url', 'state'] };
 const commonFor = (template: string) =>
-	activityCommon.filter(({ key }) => key !== dropped[template]);
+	activityCommon.filter(({ key }) => !dropped[template]?.includes(key));
 
 export const activityTemplates: ContentTemplate[] = templates.map((template) => ({
 	...template,
