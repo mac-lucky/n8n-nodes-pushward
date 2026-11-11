@@ -191,6 +191,32 @@ const templates: ContentTemplate[] = [
 		],
 	},
 	{
+		value: 'heatmap',
+		name: 'Heatmap',
+		description: 'Calendar grid of daily values',
+		fields: [
+			{
+				key: 'cells',
+				displayName: 'Cells',
+				type: 'numberList',
+				nullable: true,
+				required: true,
+				placeholder: 'e.g. 3, 0, null, 5, 2, 8, 1',
+				description:
+					'Comma-separated daily values, oldest first, from 7 to 154. An empty entry or null is a day with no data.',
+			},
+			{ ...value, description: 'Headline number shown next to the label' },
+			{ ...minValue, description: 'Values at or below it get the faintest color. Defaults to 0.' },
+			{
+				...maxValue,
+				description:
+					'Value that gets the full color, above Min Value. Defaults to the largest cell.',
+			},
+			unit,
+			{ ...endDate, description: 'Day of the last cell. Defaults to the day of the last update.' },
+		],
+	},
+	{
 		value: 'progress',
 		name: 'Progress',
 		description: 'Progress bar',

@@ -18,9 +18,12 @@ export interface ContentField {
 	default?: NodeParameterValue;
 	placeholder?: string;
 	typeOptions?: INodeProperties['typeOptions'];
+	// on a boolean: a true/false dropdown, so a row entry can leave it out
 	options?: string[];
 	// options: values from an older release that saved workflows may hold, sent as their new value
 	renamed?: Record<string, string>;
+	// numberList: an empty entry or null is sent as null
+	nullable?: boolean;
 	// rows: the label of one entry, and the sub-fields of each entry
 	item?: string;
 	fields?: ContentField[];
@@ -152,9 +155,11 @@ function property(
 
 // Every entry of a fixed collection stores all its sub-fields, so an optional enum needs a blank.
 function entryProperty(field: ContentField): INodeProperties {
-	const blankable = field.type === 'options' && !field.required;
+	const blankable = field.options && !field.required;
 	return property(
-		blankable ? { ...field, options: ['', ...(field.options ?? [])], default: '' } : field,
+		blankable
+			? { ...field, type: 'options', options: ['', ...(field.options ?? [])], default: '' }
+			: field,
 		field.key,
 	);
 }

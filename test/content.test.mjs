@@ -65,6 +65,25 @@ const activityCases = {
 		{ boardTiles: { item: [{ label: 'CPU', value: '42', trend: '' }] } },
 		{ tiles: [{ label: 'CPU', value: '42' }] },
 	],
+	// an item left on None carries no checked, so a PATCH keeps the stored tick
+	checklist: [
+		{
+			checklistItems: {
+				item: [
+					{ id: 'milk', label: 'Milk', checked: 'true' },
+					{ id: 'eggs', label: 'Eggs', checked: '' },
+					{ id: 'bread', label: 'Bread', checked: 'false' },
+				],
+			},
+		},
+		{
+			items: [
+				{ id: 'milk', label: 'Milk', checked: true },
+				{ id: 'eggs', label: 'Eggs' },
+				{ id: 'bread', label: 'Bread', checked: false },
+			],
+		},
+	],
 	countdown: [{}, {}],
 	gauge: [
 		{ gaugeValue: 5, gaugeMinValue: 1, gaugeMaxValue: 10 },
@@ -94,6 +113,7 @@ const widgetCases = {
 		{ gaugeValue: 5, gaugeMinValue: 1, gaugeMaxValue: 10 },
 		{ value: 5, min_value: 1, max_value: 10 },
 	],
+	heatmap: [{ heatmapCells: '3, 0, , null, 5, 2, 8' }, { cells: [3, 0, null, null, 5, 2, 8] }],
 	progress: [{ progressValue: 0.5 }, { value: 0.5 }],
 	schedule: [
 		{ schedulePeriods: { item: [{ start: '2026-11-20T18:00:00Z', value: 3, level: '' }] } },
@@ -111,7 +131,7 @@ const widgetCases = {
 	value: [{}, {}],
 };
 
-test('both resources cover all 10 templates and their operations', () => {
+test('both resources cover all 11 templates and their operations', () => {
 	const values = (list) => list.map(({ value }) => value).sort();
 
 	assert.deepEqual(values(activityTemplates), Object.keys(activityCases).sort());
@@ -283,6 +303,31 @@ test('comma lists parse and a non-numeric point is refused', () => {
 	assert.throws(() => widget('trend', { trendPoints: [1, null, 3] }), /Points has a blank entry/);
 });
 
+test('heatmap cells keep a day without data as null', () => {
+	assert.deepEqual(widget('heatmap', { heatmapCells: [1, null, 0, '2'] }).cells, [1, null, 0, 2]);
+	assert.deepEqual(widget('heatmap', { heatmapCells: '1,null,3,' }).cells, [1, null, 3, null]);
+	assert.equal(widget('heatmap', { heatmapCells: ' , ' }).cells, undefined);
+	assert.throws(() => widget('heatmap', { heatmapCells: '1,none' }), /Cells takes a number/);
+});
+
+test('a checklist item renders Checked as a blank-first dropdown', () => {
+	const items = description.properties.find(({ name }) => name === 'checklistItems');
+	const checked = items.options[0].values.find(({ name }) => name === 'checked');
+	assert.equal(checked.type, 'options');
+	assert.equal(checked.default, '');
+	assert.deepEqual(
+		checked.options.map(({ value }) => value),
+		['', 'true', 'false'],
+	);
+	assert.throws(
+		() =>
+			activity('checklist', {
+				checklistItems: { item: [{ id: 'a', label: 'A', checked: 'yes' }] },
+			}),
+		/Checked takes true or false/,
+	);
+});
+
 test('Extra Content merges last and drops server-owned keys', () => {
 	assert.deepEqual(
 		activity('gauge', {
@@ -415,6 +460,7 @@ test('a value the mapper refuses stops Start before the POST', async () => {
 for (const [template, parameters] of [
 	['approval', { approvalOptions: {} }],
 	['board', {}],
+	['checklist', { checklistItems: { item: [{ id: '', label: '', checked: '' }] } }],
 	['log', { logLines: { item: [{ text: '', level: '' }] } }],
 	['timeline', { timelineValue: { item: [{ name: '', value: 1 }] } }],
 ]) {
@@ -468,6 +514,10 @@ test('Create refuses a template without its required content', async () => {
 	await assert.rejects(create({ template: 'flow', flowFlow: '{}' }), {
 		name: 'NodeOperationError',
 		message: /Flow template needs Flow \(JSON\)/,
+	});
+	await assert.rejects(create({ template: 'heatmap', heatmapCells: ' , ' }), {
+		name: 'NodeOperationError',
+		message: /Heatmap template needs Cells/,
 	});
 });
 
@@ -708,6 +758,7 @@ test('Start and Create require exactly the required fields of the template', () 
 		alert: ['alertSeverity'],
 		approval: ['approvalOptions'],
 		board: ['boardTiles'],
+		checklist: ['checklistItems'],
 		gauge: ['gaugeValue', 'gaugeMinValue', 'gaugeMaxValue'],
 		log: ['logLines'],
 		steps: ['stepsTotalSteps', 'stepsCurrentStep'],
@@ -718,6 +769,7 @@ test('Start and Create require exactly the required fields of the template', () 
 		countdown: ['countdownEndDate'],
 		flow: ['flowFlow'],
 		gauge: ['gaugeValue', 'gaugeMinValue', 'gaugeMaxValue'],
+		heatmap: ['heatmapCells'],
 		schedule: ['schedulePeriods'],
 		stat_list: ['statListStatRows'],
 		trend: ['trendValue', 'trendPoints'],
@@ -744,6 +796,8 @@ test('the Content Fields collections hold the optional fields, Update every fiel
 	assert.equal(start.includes('approvalUrl'), false);
 	assert.equal(update.includes('approvalUrl'), false);
 	assert.equal(update.includes('genericUrl'), true);
+	assert.equal(update.includes('checklistState'), false);
+	assert.equal(update.includes('checklistUrl'), true);
 
 	for (const option of contentFields('activity', 'update')) {
 		assert.equal(option.required, undefined, option.name);

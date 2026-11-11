@@ -204,6 +204,46 @@ const templates: ContentTemplate[] = [
 		],
 	},
 	{
+		value: 'checklist',
+		name: 'Checklist',
+		description: 'Items ticked off on the device',
+		fields: [
+			{
+				key: 'items',
+				displayName: 'Items',
+				type: 'rows',
+				item: 'Item',
+				required: true,
+				description: 'Items of the list, from 1 to 8. Update replaces the whole list.',
+				fields: [
+					{
+						key: 'id',
+						displayName: 'ID',
+						type: 'string',
+						required: true,
+						description:
+							'Identifier of the item, up to 16 letters, digits, hyphens or underscores, unique in the list',
+					},
+					{
+						key: 'label',
+						displayName: 'Label',
+						type: 'string',
+						required: true,
+						description: 'Item text, up to 40 characters',
+					},
+					{
+						key: 'checked',
+						displayName: 'Checked',
+						type: 'boolean',
+						options: ['true', 'false'],
+						description:
+							'None keeps the state stored for this ID, so a tick made on a device survives an update. A new item starts unchecked.',
+					},
+				],
+			},
+		],
+	},
+	{
 		value: 'countdown',
 		name: 'Countdown',
 		description: 'Timer counting down to an end date, or up from a start date',
@@ -530,9 +570,10 @@ const activityCommon: ContentField[] = [
 	},
 ];
 
-// The API refuses url on an approval card.
+// The API refuses url on an approval card and writes a checklist's state from its ticks.
+const dropped: Record<string, string> = { approval: 'url', checklist: 'state' };
 const commonFor = (template: string) =>
-	template === 'approval' ? activityCommon.filter(({ key }) => key !== 'url') : activityCommon;
+	activityCommon.filter(({ key }) => key !== dropped[template]);
 
 export const activityTemplates: ContentTemplate[] = templates.map((template) => ({
 	...template,

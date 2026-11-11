@@ -19,6 +19,10 @@ The package adds two nodes, PushWard and PushWard Trigger.
 
 Start creates the activity when it doesn't exist yet and sets it ongoing. Pick a template and the fields follow it; Extra Content takes JSON for anything the form doesn't have.
 
+Live Activity templates: Alert, Approval, Board, Checklist, Countdown, Gauge, Generic, Log, Media, Steps, Timeline. Widget templates: Battery, Countdown, Flow, Gauge, Heatmap, Progress, Schedule, Stat List, Status, Trend, Value.
+
+A Checklist item's Checked starts on None, which leaves it out of the request: on Update the item keeps whatever was ticked on the phone, and a new item starts unchecked. Get returns the ticks, and once every item is ticked PushWard ends the activity. Heatmap Cells takes one number per day, oldest first; an empty entry or `null` is a day with no data.
+
 Update starts on Keep Current, which leaves the template alone. To change fields, pick the template the item already uses. Picking a different one switches the layout, and a Live Activity then loses the tiles, log lines or history the old one held.
 
 Create or Replace stores a widget but doesn't tell devices to reload it. For anything on a schedule use Update, which does.

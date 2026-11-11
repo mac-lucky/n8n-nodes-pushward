@@ -158,9 +158,14 @@ function toNumber(value: unknown, label: string): number | undefined {
 }
 
 // A hole would shift every later point, so only a list with nothing in it counts as unset.
-function toNumberList(value: unknown, label: string): number[] | undefined {
+function toNumberList(
+	value: unknown,
+	label: string,
+	nullable = false,
+): Array<number | null> | undefined {
 	if (!list(value)) return undefined;
 	return listEntries(value).map((entry) => {
+		if (nullable && (!entry || entry === 'null')) return null;
 		if (!entry) throw new Error(`${label} has a blank entry in "${text(value)}"`);
 		return toNumber(entry, label) as number;
 	});
@@ -198,7 +203,7 @@ function mapField(field: ContentField, value: unknown, toDate: ToDate): unknown 
 		case 'stringList':
 			return list(value);
 		case 'numberList':
-			return toNumberList(value, field.displayName);
+			return toNumberList(value, field.displayName, field.nullable);
 		case 'json':
 			return parseJsonObject(value, field.displayName);
 		case 'options': {
