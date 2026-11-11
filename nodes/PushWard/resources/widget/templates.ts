@@ -293,8 +293,8 @@ const widgetCommon: ContentField[] = [
 	},
 ];
 
-// Only these keep Original, the look from before the redesign. The API refuses it on the rest.
-const withOriginal = ['battery', 'flow', 'status'];
+// The templates the API keeps Original on, the look from before the redesign. It refuses it on the rest.
+const withOriginal = ['battery', 'flow', 'heatmap', 'status'];
 
 const style = (template: string): ContentField => ({
 	key: 'style',
@@ -303,7 +303,7 @@ const style = (template: string): ContentField => ({
 	options: [...(withOriginal.includes(template) ? ['original'] : []), 'refined', 'rethink'],
 	default: 'refined',
 	description:
-		'Refined is the default look and Rethink a different layout. Original, the look from before the redesign, exists for Battery, Flow and Status. Overrides the style picked in the PushWard app; leave it out to let the app decide. On Update, Extra Content {"style": null} clears it.',
+		'Refined is the default look and Rethink a different layout. Original, the look from before the redesign, exists for Battery, Flow, Heatmap and Status. A style set here overrides the one picked in the PushWard app. Create without it lets the app decide; Update without it keeps the current style, and Extra Content {"style": null} clears it.',
 });
 
 export const widgetTemplates: ContentTemplate[] = templates.map((template) => ({

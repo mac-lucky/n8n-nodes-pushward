@@ -750,26 +750,29 @@ test('the Content Fields collections hold the optional fields, Update every fiel
 	}
 });
 
-test('Style offers refined and rethink on every widget, original only on three', () => {
+test('Style offers refined and rethink on every widget, original only where the API keeps it', () => {
 	for (const operationValue of ['create', 'update']) {
+		const styles = contentFields('widget', operationValue).filter(
+			({ displayName }) => displayName === 'Style',
+		);
 		const offered = Object.fromEntries(
-			contentFields('widget', operationValue)
-				.filter(({ displayName }) => displayName === 'Style')
-				.map(({ displayOptions, options }) => [
-					displayOptions.show['/template'][0],
-					options.map(({ value }) => value),
-				]),
+			styles.map(({ displayOptions, options }) => [
+				displayOptions.show['/template'][0],
+				options.map(({ value }) => value),
+			]),
 		);
 		assert.deepEqual(Object.keys(offered).sort(), Object.keys(widgetCases).sort());
 		for (const [template, values] of Object.entries(offered)) {
 			assert.deepEqual(
 				values,
-				['battery', 'flow', 'status'].includes(template)
+				['battery', 'flow', 'heatmap', 'status'].includes(template)
 					? ['original', 'refined', 'rethink']
 					: ['refined', 'rethink'],
 				`${operationValue} ${template}`,
 			);
 		}
+		// added and left alone it must be refined, not the first option (original)
+		for (const { name, default: picked } of styles) assert.equal(picked, 'refined', name);
 	}
 });
 
