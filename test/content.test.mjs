@@ -1045,6 +1045,22 @@ test('Style is sent only when added, and Extra Content null clears it on Update'
 	});
 });
 
+test('a checklist sends auto_end only when the field was added', () => {
+	const items = { item: [{ id: 'a', label: 'A', checked: '' }] };
+	assert.equal(activity('checklist', { checklistItems: items }).auto_end, undefined);
+	assert.equal(
+		activity('checklist', { checklistItems: items, checklistAutoEnd: false }).auto_end,
+		false,
+	);
+	for (const operationValue of ['start', 'update']) {
+		const field = contentFields('activity', operationValue).find(
+			({ name }) => name === 'checklistAutoEnd',
+		);
+		assert.equal(field.type, 'boolean');
+		assert.equal(field.default, true);
+	}
+});
+
 test('n8n keeps the current template fields and drops another template', () => {
 	const parameters = {
 		resource: 'activity',

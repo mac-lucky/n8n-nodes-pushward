@@ -241,6 +241,14 @@ const templates: ContentTemplate[] = [
 					},
 				],
 			},
+			{
+				key: 'auto_end',
+				displayName: 'Auto End',
+				type: 'boolean',
+				default: true,
+				description:
+					'Whether the activity ends a few seconds after every item is checked. Off keeps the finished list on the card until the End operation ends it.',
+			},
 		],
 	},
 	{
