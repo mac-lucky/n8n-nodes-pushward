@@ -158,12 +158,18 @@ function toNumber(value: unknown, label: string): number | undefined {
 }
 
 // A hole would shift every later point, so only a list with nothing in it counts as unset.
+// When entries may be null, a list of only empty entries is still a list of days without data.
 function toNumberList(
 	value: unknown,
 	label: string,
 	nullable = false,
 ): Array<number | null> | undefined {
-	if (!list(value)) return undefined;
+	const empty = nullable
+		? Array.isArray(value)
+			? !value.length
+			: !text(value)?.trim()
+		: !list(value);
+	if (empty) return undefined;
 	return listEntries(value).map((entry) => {
 		if (nullable && (!entry || entry === 'null')) return null;
 		if (!entry) throw new Error(`${label} has a blank entry in "${text(value)}"`);

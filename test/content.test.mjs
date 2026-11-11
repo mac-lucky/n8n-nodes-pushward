@@ -306,7 +306,14 @@ test('comma lists parse and a non-numeric point is refused', () => {
 test('heatmap cells keep a day without data as null', () => {
 	assert.deepEqual(widget('heatmap', { heatmapCells: [1, null, 0, '2'] }).cells, [1, null, 0, 2]);
 	assert.deepEqual(widget('heatmap', { heatmapCells: '1,null,3,' }).cells, [1, null, 3, null]);
-	assert.equal(widget('heatmap', { heatmapCells: ' , ' }).cells, undefined);
+	assert.deepEqual(widget('heatmap', { heatmapCells: ' , ' }).cells, [null, null]);
+	assert.deepEqual(
+		widget('heatmap', { heatmapCells: Array(7).fill(null) }).cells,
+		Array(7).fill(null),
+	);
+	assert.deepEqual(widget('heatmap', { heatmapCells: ',,,,,,' }).cells, Array(7).fill(null));
+	assert.equal(widget('heatmap', { heatmapCells: ' ' }).cells, undefined);
+	assert.equal(widget('heatmap', { heatmapCells: [] }).cells, undefined);
 	assert.throws(() => widget('heatmap', { heatmapCells: '1,none' }), /Cells takes a number/);
 });
 
@@ -515,10 +522,12 @@ test('Create refuses a template without its required content', async () => {
 		name: 'NodeOperationError',
 		message: /Flow template needs Flow \(JSON\)/,
 	});
-	await assert.rejects(create({ template: 'heatmap', heatmapCells: ' , ' }), {
+	await assert.rejects(create({ template: 'heatmap', heatmapCells: ' ' }), {
 		name: 'NodeOperationError',
 		message: /Heatmap template needs Cells/,
 	});
+	const noData = await create({ template: 'heatmap', heatmapCells: Array(7).fill(null) });
+	assert.deepEqual(noData.body.content.cells, Array(7).fill(null));
 });
 
 test('each operation sends the dates its resource takes', async () => {

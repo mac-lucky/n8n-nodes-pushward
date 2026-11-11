@@ -210,7 +210,7 @@ const templates: ContentTemplate[] = [
 			{
 				...maxValue,
 				description:
-					'Value that gets the full color, above Min Value. Defaults to the largest cell.',
+					'Value that gets the full color, above Min Value. The field starts at 100; leave it out to use the largest cell.',
 			},
 			unit,
 			{ ...endDate, description: 'Day of the last cell. Defaults to the day of the last update.' },
