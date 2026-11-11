@@ -307,6 +307,7 @@ test('heatmap cells keep a day without data as null', () => {
 	assert.deepEqual(widget('heatmap', { heatmapCells: [1, null, 0, '2'] }).cells, [1, null, 0, 2]);
 	assert.deepEqual(widget('heatmap', { heatmapCells: '1,null,3,' }).cells, [1, null, 3, null]);
 	assert.deepEqual(widget('heatmap', { heatmapCells: ' , ' }).cells, [null, null]);
+	// Passed through as typed; the API refuses cells without a number, the node does not decide that.
 	assert.deepEqual(
 		widget('heatmap', { heatmapCells: Array(7).fill(null) }).cells,
 		Array(7).fill(null),
@@ -526,8 +527,6 @@ test('Create refuses a template without its required content', async () => {
 		name: 'NodeOperationError',
 		message: /Heatmap template needs Cells/,
 	});
-	const noData = await create({ template: 'heatmap', heatmapCells: Array(7).fill(null) });
-	assert.deepEqual(noData.body.content.cells, Array(7).fill(null));
 });
 
 test('each operation sends the dates its resource takes', async () => {

@@ -158,7 +158,7 @@ function toNumber(value: unknown, label: string): number | undefined {
 }
 
 // A hole would shift every later point, so only a list with nothing in it counts as unset.
-// When entries may be null, a list of only empty entries is still a list of days without data.
+// When entries may be null, a list of only empty entries is sent as nulls and the API rules on it.
 function toNumberList(
 	value: unknown,
 	label: string,
