@@ -159,6 +159,7 @@ function toNumber(value: unknown, label: string): number | undefined {
 
 // A hole would shift every later point, so only a list with nothing in it counts as unset.
 // When entries may be null, a list of only empty entries is sent as nulls and the API rules on it.
+// A trailing comma is a typo, not one more day: "3,0,5," is three values.
 function toNumberList(
 	value: unknown,
 	label: string,
@@ -170,7 +171,9 @@ function toNumberList(
 			: !text(value)?.trim()
 		: !list(value);
 	if (empty) return undefined;
-	return listEntries(value).map((entry) => {
+	const entries = listEntries(value);
+	if (nullable && typeof value === 'string' && !entries.at(-1)) entries.pop();
+	return entries.map((entry) => {
 		if (nullable && (!entry || entry === 'null')) return null;
 		if (!entry) throw new Error(`${label} has a blank entry in "${text(value)}"`);
 		return toNumber(entry, label) as number;

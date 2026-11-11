@@ -305,14 +305,18 @@ test('comma lists parse and a non-numeric point is refused', () => {
 
 test('heatmap cells keep a day without data as null', () => {
 	assert.deepEqual(widget('heatmap', { heatmapCells: [1, null, 0, '2'] }).cells, [1, null, 0, 2]);
-	assert.deepEqual(widget('heatmap', { heatmapCells: '1,null,3,' }).cells, [1, null, 3, null]);
-	assert.deepEqual(widget('heatmap', { heatmapCells: ' , ' }).cells, [null, null]);
+	// A trailing comma would otherwise add today as a day without data and shift every value back.
+	assert.deepEqual(widget('heatmap', { heatmapCells: '3,0,5,7,' }).cells, [3, 0, 5, 7]);
+	assert.deepEqual(widget('heatmap', { heatmapCells: '1,,3, ' }).cells, [1, null, 3]);
+	assert.deepEqual(widget('heatmap', { heatmapCells: '1,,3,null' }).cells, [1, null, 3, null]);
+	assert.deepEqual(widget('heatmap', { heatmapCells: '1,3,,' }).cells, [1, 3, null]);
+	assert.deepEqual(widget('heatmap', { heatmapCells: ' , ' }).cells, [null]);
 	// Passed through as typed; the API refuses cells without a number, the node does not decide that.
 	assert.deepEqual(
 		widget('heatmap', { heatmapCells: Array(7).fill(null) }).cells,
 		Array(7).fill(null),
 	);
-	assert.deepEqual(widget('heatmap', { heatmapCells: ',,,,,,' }).cells, Array(7).fill(null));
+	assert.deepEqual(widget('heatmap', { heatmapCells: ',,,,,,null' }).cells, Array(7).fill(null));
 	assert.equal(widget('heatmap', { heatmapCells: ' ' }).cells, undefined);
 	assert.equal(widget('heatmap', { heatmapCells: [] }).cells, undefined);
 	assert.throws(() => widget('heatmap', { heatmapCells: '1,none' }), /Cells takes a number/);

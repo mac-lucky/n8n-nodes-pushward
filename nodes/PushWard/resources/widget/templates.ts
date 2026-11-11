@@ -203,7 +203,7 @@ const templates: ContentTemplate[] = [
 				required: true,
 				placeholder: 'e.g. 3, 0, null, 5, 2, 8, 1',
 				description:
-					'Comma-separated daily values, oldest first, from 7 to 154. An empty entry or null is a day with no data.',
+					'Comma-separated daily values, oldest first, from 7 to 154. An empty entry or null is a day with no data; a comma after the last value is ignored.',
 			},
 			{ ...value, description: 'Headline number shown next to the label' },
 			{ ...minValue, description: 'Values at or below it get the faintest color. Defaults to 0.' },

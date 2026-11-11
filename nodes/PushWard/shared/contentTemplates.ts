@@ -22,7 +22,7 @@ export interface ContentField {
 	options?: string[];
 	// options: values from an older release that saved workflows may hold, sent as their new value
 	renamed?: Record<string, string>;
-	// numberList: an empty entry or null is sent as null
+	// numberList: an empty entry or null is sent as null, except a trailing comma's
 	nullable?: boolean;
 	// rows: the label of one entry, and the sub-fields of each entry
 	item?: string;
