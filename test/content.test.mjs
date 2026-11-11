@@ -750,6 +750,59 @@ test('the Content Fields collections hold the optional fields, Update every fiel
 	}
 });
 
+test('Style offers refined and rethink on every widget, original only on three', () => {
+	for (const operationValue of ['create', 'update']) {
+		const offered = Object.fromEntries(
+			contentFields('widget', operationValue)
+				.filter(({ displayName }) => displayName === 'Style')
+				.map(({ displayOptions, options }) => [
+					displayOptions.show['/template'][0],
+					options.map(({ value }) => value),
+				]),
+		);
+		assert.deepEqual(Object.keys(offered).sort(), Object.keys(widgetCases).sort());
+		for (const [template, values] of Object.entries(offered)) {
+			assert.deepEqual(
+				values,
+				['battery', 'flow', 'status'].includes(template)
+					? ['original', 'refined', 'rethink']
+					: ['refined', 'rethink'],
+				`${operationValue} ${template}`,
+			);
+		}
+	}
+});
+
+test('Style is sent only when added, and Extra Content null clears it on Update', async () => {
+	const create = (template, fields) =>
+		requestFor(operation('widget', 'create'), {
+			slug: 'a',
+			name: 'A',
+			template,
+			contentFields: fields,
+		});
+	const update = (template, fields) =>
+		requestFor(operation('widget', 'update'), { template, contentFields: fields });
+
+	assert.deepEqual((await create('status', {})).body.content, { template: 'status' });
+	assert.deepEqual((await create('status', { statusStyle: 'original' })).body.content, {
+		template: 'status',
+		style: 'original',
+	});
+	// a style picked under another template is never read
+	assert.deepEqual((await create('value', { statusStyle: 'original' })).body.content, {
+		template: 'value',
+	});
+	assert.deepEqual(await update('value', { valueStyle: 'rethink' }), {
+		body: { content: { template: 'value', style: 'rethink' } },
+		headers: mergePatch,
+	});
+	assert.deepEqual(await update('', { extraContent: '{"style": null}' }), {
+		body: { content: { style: null } },
+		headers: mergePatch,
+	});
+});
+
 test('n8n keeps the current template fields and drops another template', () => {
 	const parameters = {
 		resource: 'activity',

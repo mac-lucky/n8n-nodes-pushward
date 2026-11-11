@@ -23,6 +23,8 @@ Update starts on Keep Current, which leaves the template alone. To change fields
 
 Create or Replace stores a widget but doesn't tell devices to reload it. For anything on a schedule use Update, which does.
 
+A widget's look is Style under Content Fields. Refined is the default, Rethink lays out the same data differently, and Battery, Flow and Status also keep Original, the look from before the widget redesign. The form offers only the styles the template has. A style set here overrides the one picked for that widget in the PushWard app, so leave it out if the person with the phone should choose; with neither set the widget is Refined. Create or Replace sends the whole content, so running it without Style drops a style set earlier. Update without Style keeps it, and Extra Content `{"style": null}` clears it.
+
 ## Send options
 
 Send and scheduled Create share these. Title (up to 256 characters) and Body (up to 4096) are required. The API refuses a longer value and the node does not shorten it for you; encrypted sends differ, see Encryption. A field you added but left blank is not sent, and neither is an expression that comes out empty. Every notification carries `source` and `source_display_name` set to `n8n`, which is the sender name you see in the app.
