@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-pushward",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "Send PushWard notifications and drive Live Activities and widgets from n8n workflows",
 	"license": "MIT",
 	"homepage": "https://pushward.app",
