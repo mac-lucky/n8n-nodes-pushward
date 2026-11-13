@@ -23,7 +23,7 @@ Update starts on Keep Current, which leaves the template alone. To change fields
 
 Create or Replace stores a widget but doesn't tell devices to reload it. For anything on a schedule use Update, which does.
 
-A widget's look is Style under Content Fields. Refined is the default, Rethink lays out the same data differently, and Battery, Flow, Heatmap and Status also keep Original, the look from before the widget redesign. The form offers only the styles the template has. A style set here overrides the one picked for that widget in the PushWard app, so leave it out if the person with the phone should choose; with neither set the widget is Refined. Create or Replace sends the whole content, so running it without Style drops a style set earlier. Update without Style keeps it, and Extra Content `{"style": null}` clears it.
+A widget's look is Style under Content Fields. Refined is the default, Rethink lays out the same data differently, and Battery, Flow, Heatmap, Stat List and Status also keep Original, the look from before the widget redesign. The form offers only the styles the template has. A style set here overrides the one picked for that widget in the PushWard app, so leave it out if the person with the phone should choose; with neither set the widget is Refined. Create or Replace sends the whole content, so running it without Style drops a style set earlier. Update without Style keeps it, and Extra Content `{"style": null}` clears it.
 
 ## Send options
 

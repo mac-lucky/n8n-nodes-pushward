@@ -765,7 +765,7 @@ test('Style offers refined and rethink on every widget, original only where the 
 		for (const [template, values] of Object.entries(offered)) {
 			assert.deepEqual(
 				values,
-				['battery', 'flow', 'heatmap', 'status'].includes(template)
+				['battery', 'flow', 'heatmap', 'stat_list', 'status'].includes(template)
 					? ['original', 'refined', 'rethink']
 					: ['refined', 'rethink'],
 				`${operationValue} ${template}`,
