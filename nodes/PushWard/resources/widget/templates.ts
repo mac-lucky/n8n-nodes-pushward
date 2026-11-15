@@ -93,7 +93,7 @@ const density: ContentField = {
 	type: 'options',
 	options: ['auto', 'compact', 'comfortable'],
 	description:
-		'Row spacing of the list. A density set here overrides the Row Density picked in the PushWard app. Update without it keeps the current one, and Extra Content {"density": null} clears it.',
+		'Row spacing of the list. A density set here overrides the Row Density picked in the PushWard app. Update without it keeps the current one, and Extra Content {"density": null} clears it. Clear it (and density_by_size) in the same update that moves the widget to another template, or the update is refused.',
 };
 
 const templates: ContentTemplate[] = [
