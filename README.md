@@ -23,7 +23,11 @@ Update starts on Keep Current, which leaves the template alone. To change fields
 
 Create or Replace stores a widget but doesn't tell devices to reload it. For anything on a schedule use Update, which does.
 
-A widget's look is Style under Content Fields. Refined is the default, Rethink lays out the same data differently, and Battery, Flow, Heatmap, Stat List and Status also keep Original, the look from before the widget redesign. The form offers only the styles the template has. A style set here overrides the one picked for that widget in the PushWard app, so leave it out if the person with the phone should choose; with neither set the widget is Refined. Create or Replace sends the whole content, so running it without Style drops a style set earlier. Update without Style keeps it, and Extra Content `{"style": null}` clears it.
+A widget's look is Style under Content Fields: Standard is the default, Bold lays out the same data differently and Classic is the earlier design. Every template has all three. A style set here overrides the one picked for that widget in the PushWard app, so leave it out if the person with the phone should choose; with neither set the widget is Standard. Create or Replace sends the whole content, so running it without Style drops a style set earlier. Update without Style keeps it, and Extra Content `{"style": null}` clears it.
+
+Style by Size picks the look for one size and wins over Style there. Small, Medium and Large are the Home Screen sizes and Lock Screen is every Lock Screen size; Android has no Lock Screen widgets and ignores it. Stat List also has Row Density (auto, compact or comfortable) and Row Density by Size, which override the app's Row Density the same way. Update replaces the whole by-size list stored before, so add every size you want to keep. While a density is stored, Update can't move the widget to another template unless the same run clears it with Extra Content `{"density": null, "density_by_size": null}`.
+
+A Style saved with 0.3.0 keeps working: the node sends it under its new name. The editor marks the old value as not supported until you pick a style again.
 
 ## Send options
 

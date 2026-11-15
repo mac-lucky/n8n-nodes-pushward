@@ -65,6 +65,37 @@ const endDate: ContentField = {
 	description: 'End of the window',
 };
 
+// Sent as { size: value }. On Update the object replaces the stored one, so list every size to keep.
+const bySize = (key: string, of: ContentField): ContentField => ({
+	key,
+	displayName: `${of.displayName} by Size`,
+	type: 'rows',
+	item: 'Size',
+	keyedByName: true,
+	description: `${of.displayName} for one size, over ${of.displayName}. Update replaces every size set before; Extra Content {"${key}": null} clears them.`,
+	fields: [
+		{
+			key: 'name',
+			displayName: 'Size',
+			type: 'options',
+			options: ['small', 'medium', 'large', 'lock_screen'],
+			required: true,
+			description:
+				'Small, Medium and Large are the Home Screen sizes. Lock Screen covers every Lock Screen size; Android has none.',
+		},
+		{ ...of, key: 'value', required: true, description: `${of.displayName} at that size` },
+	],
+});
+
+const density: ContentField = {
+	key: 'density',
+	displayName: 'Row Density',
+	type: 'options',
+	options: ['auto', 'compact', 'comfortable'],
+	description:
+		'Row spacing of the list. A density set here overrides the Row Density picked in the PushWard app. Update without it keeps the current one, and Extra Content {"density": null} clears it.',
+};
+
 const templates: ContentTemplate[] = [
 	{
 		value: 'battery',
@@ -247,6 +278,8 @@ const templates: ContentTemplate[] = [
 					},
 				],
 			},
+			density,
+			bySize('density_by_size', density),
 		],
 	},
 	{
@@ -293,20 +326,18 @@ const widgetCommon: ContentField[] = [
 	},
 ];
 
-// The templates the API keeps Original on, the look from before the redesign. It refuses it on the rest.
-const withOriginal = ['battery', 'flow', 'heatmap', 'stat_list', 'status'];
-
-const style = (template: string): ContentField => ({
+const style: ContentField = {
 	key: 'style',
 	displayName: 'Style',
 	type: 'options',
-	options: [...(withOriginal.includes(template) ? ['original'] : []), 'refined', 'rethink'],
-	default: 'refined',
+	options: ['standard', 'bold', 'classic'],
+	// 0.3.0 saved these names. n8n still runs a node holding one (the editor only marks it), so send the new name.
+	renamed: { refined: 'standard', rethink: 'bold', original: 'classic' },
 	description:
-		'Refined is the default look and Rethink a different layout. Original, the look from before the redesign, exists for Battery, Flow, Heatmap, Stat List and Status. A style set here overrides the one picked in the PushWard app. Create without it lets the app decide; Update without it keeps the current style, and Extra Content {"style": null} clears it.',
-});
+		'Standard is the default look, Bold lays the same data out differently and Classic is the earlier design. A style set here overrides the one picked in the PushWard app. Create without it lets the app decide; Update without it keeps the current style, and Extra Content {"style": null} clears it.',
+};
 
 export const widgetTemplates: ContentTemplate[] = templates.map((template) => ({
 	...template,
-	fields: [...template.fields, style(template.value), ...widgetCommon],
+	fields: [...template.fields, style, bySize('style_by_size', style), ...widgetCommon],
 }));

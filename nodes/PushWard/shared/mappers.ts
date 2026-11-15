@@ -201,6 +201,10 @@ function mapField(field: ContentField, value: unknown, toDate: ToDate): unknown 
 			return toNumberList(value, field.displayName);
 		case 'json':
 			return parseJsonObject(value, field.displayName);
+		case 'options': {
+			const picked = text(value);
+			return picked && (field.renamed?.[picked] ?? picked);
+		}
 		case 'rows': {
 			const rows = (((value as IDataObject | undefined)?.item ?? []) as IDataObject[])
 				.map((row) => mapFields(field.fields ?? [], (sub) => row[sub.key], toDate))

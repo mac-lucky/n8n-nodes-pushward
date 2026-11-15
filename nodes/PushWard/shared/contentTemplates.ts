@@ -19,6 +19,8 @@ export interface ContentField {
 	placeholder?: string;
 	typeOptions?: INodeProperties['typeOptions'];
 	options?: string[];
+	// options: values from an older release that saved workflows may hold, sent as their new value
+	renamed?: Record<string, string>;
 	// rows: the label of one entry, and the sub-fields of each entry
 	item?: string;
 	fields?: ContentField[];
@@ -86,7 +88,8 @@ export const requiredParams = (templates: ContentTemplate[], name: string) =>
 const alphabetical = (a: INodeProperties, b: INodeProperties) =>
 	a.displayName.localeCompare(b.displayName);
 
-const optionName = (value: string) => (value ? value[0].toUpperCase() + value.slice(1) : 'None');
+const optionName = (value: string) =>
+	value ? value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'None';
 
 const defaults = {
 	boolean: false,

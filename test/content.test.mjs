@@ -750,7 +750,7 @@ test('the Content Fields collections hold the optional fields, Update every fiel
 	}
 });
 
-test('Style offers refined and rethink on every widget, original only where the API keeps it', () => {
+test('Style offers standard, bold and classic on every widget, standard when left alone', () => {
 	for (const operationValue of ['create', 'update']) {
 		const styles = contentFields('widget', operationValue).filter(
 			({ displayName }) => displayName === 'Style',
@@ -763,17 +763,177 @@ test('Style offers refined and rethink on every widget, original only where the 
 		);
 		assert.deepEqual(Object.keys(offered).sort(), Object.keys(widgetCases).sort());
 		for (const [template, values] of Object.entries(offered)) {
-			assert.deepEqual(
-				values,
-				['battery', 'flow', 'heatmap', 'stat_list', 'status'].includes(template)
-					? ['original', 'refined', 'rethink']
-					: ['refined', 'rethink'],
-				`${operationValue} ${template}`,
-			);
+			assert.deepEqual(values, ['standard', 'bold', 'classic'], `${operationValue} ${template}`);
 		}
-		// added and left alone it must be refined, not the first option (original)
-		for (const { name, default: picked } of styles) assert.equal(picked, 'refined', name);
+		for (const { name, default: picked } of styles) assert.equal(picked, 'standard', name);
 	}
+});
+
+test('Style by Size is on every widget, Row Density and its sizes only on Stat List', () => {
+	const templatesWith = (key) =>
+		widgetTemplates
+			.filter(({ fields }) => fields.some((field) => field.key === key))
+			.map(({ value }) => value)
+			.sort();
+	assert.deepEqual(templatesWith('style_by_size'), Object.keys(widgetCases).sort());
+	assert.deepEqual(templatesWith('density'), ['stat_list']);
+	assert.deepEqual(templatesWith('density_by_size'), ['stat_list']);
+
+	for (const operationValue of ['create', 'update']) {
+		const shownFor = (displayName) =>
+			contentFields('widget', operationValue)
+				.filter((field) => field.displayName === displayName)
+				.map(({ displayOptions }) => displayOptions.show['/template'][0])
+				.sort();
+		assert.deepEqual(shownFor('Style by Size'), Object.keys(widgetCases).sort());
+		assert.deepEqual(shownFor('Row Density'), ['stat_list']);
+		assert.deepEqual(shownFor('Row Density by Size'), ['stat_list']);
+	}
+
+	const entry = (name) =>
+		contentFields('widget', 'create').find((field) => field.name === name).options[0].values;
+	const optionsOf = (values, name) => values.find((field) => field.name === name).options;
+	assert.deepEqual(optionsOf(entry('valueStyleBySize'), 'name'), [
+		{ name: 'Small', value: 'small' },
+		{ name: 'Medium', value: 'medium' },
+		{ name: 'Large', value: 'large' },
+		{ name: 'Lock Screen', value: 'lock_screen' },
+	]);
+	assert.deepEqual(
+		optionsOf(entry('valueStyleBySize'), 'value').map(({ value }) => value),
+		['standard', 'bold', 'classic'],
+	);
+	assert.deepEqual(
+		optionsOf(entry('statListDensityBySize'), 'value').map(({ value }) => value),
+		['auto', 'compact', 'comfortable'],
+	);
+});
+
+test('Style by Size, Row Density and Row Density by Size are sent only when added', async () => {
+	const statRows = [{ label: 'Up', value: '99' }];
+	const create = (fields) =>
+		requestFor(operation('widget', 'create'), {
+			slug: 'a',
+			name: 'A',
+			template: 'stat_list',
+			statListStatRows: { item: statRows },
+			contentFields: fields,
+		});
+
+	assert.deepEqual((await create({})).body.content, { template: 'stat_list', stat_rows: statRows });
+	assert.deepEqual(
+		(
+			await create({
+				statListStyleBySize: {
+					item: [
+						{ name: 'large', value: 'bold' },
+						{ name: 'lock_screen', value: 'classic' },
+					],
+				},
+				statListDensity: 'comfortable',
+				statListDensityBySize: {
+					item: [
+						{ name: 'lock_screen', value: 'compact' },
+						{ name: 'small', value: 'compact' },
+					],
+				},
+			})
+		).body.content,
+		{
+			template: 'stat_list',
+			stat_rows: statRows,
+			style_by_size: { large: 'bold', lock_screen: 'classic' },
+			density: 'comfortable',
+			density_by_size: { lock_screen: 'compact', small: 'compact' },
+		},
+	);
+	// added but left without a size
+	assert.deepEqual(
+		(await create({ statListStyleBySize: {}, statListDensityBySize: { item: [] } })).body.content,
+		{ template: 'stat_list', stat_rows: statRows },
+	);
+	assert.deepEqual(
+		await requestFor(operation('widget', 'update'), {
+			template: 'gauge',
+			contentFields: { gaugeStyleBySize: { item: [{ name: 'small', value: 'standard' }] } },
+		}),
+		{
+			body: { content: { template: 'gauge', style_by_size: { small: 'standard' } } },
+			headers: mergePatch,
+		},
+	);
+	// a density picked under Stat List is never read for another template
+	assert.deepEqual(
+		await requestFor(operation('widget', 'update'), {
+			template: 'value',
+			contentFields: {
+				statListDensity: 'compact',
+				statListDensityBySize: { item: [{ name: 'small', value: 'compact' }] },
+			},
+		}),
+		{ body: { content: { template: 'value' } }, headers: mergePatch },
+	);
+});
+
+test('a style saved under its 0.3.0 name runs without issues and goes out under the new one', async () => {
+	for (const [saved, sent] of [
+		['refined', 'standard'],
+		['rethink', 'bold'],
+		['original', 'classic'],
+	]) {
+		assert.deepEqual(
+			(
+				await requestFor(operation('widget', 'create'), {
+					slug: 'a',
+					name: 'A',
+					template: 'status',
+					contentFields: { statusStyle: saved },
+				})
+			).body.content,
+			{ template: 'status', style: sent },
+		);
+		assert.deepEqual(
+			await requestFor(operation('widget', 'update'), {
+				template: 'value',
+				contentFields: { valueStyle: saved },
+			}),
+			{ body: { content: { template: 'value', style: sent } }, headers: mergePatch },
+		);
+	}
+
+	// n8n keeps the stored value and does not count it as a parameter issue, so the node still runs
+	const parameters = {
+		resource: 'widget',
+		operation: 'update',
+		slug: 'a',
+		template: 'value',
+		contentFields: { valueStyle: 'refined' },
+	};
+	const node = {
+		id: '1',
+		name: 'PushWard',
+		type: 'n8n-nodes-pushward.pushWard',
+		typeVersion: 1,
+		position: [0, 0],
+		parameters,
+	};
+	const resolved = NodeHelpers.getNodeParameters(
+		description.properties,
+		parameters,
+		true,
+		false,
+		node,
+		description,
+	);
+	assert.deepEqual(resolved.contentFields, { valueStyle: 'refined' });
+	assert.equal(
+		NodeHelpers.getNodeParametersIssues(
+			description.properties,
+			{ ...node, parameters: resolved },
+			description,
+		),
+		null,
+	);
 });
 
 test('Style is sent only when added, and Extra Content null clears it on Update', async () => {
@@ -788,16 +948,16 @@ test('Style is sent only when added, and Extra Content null clears it on Update'
 		requestFor(operation('widget', 'update'), { template, contentFields: fields });
 
 	assert.deepEqual((await create('status', {})).body.content, { template: 'status' });
-	assert.deepEqual((await create('status', { statusStyle: 'original' })).body.content, {
+	assert.deepEqual((await create('status', { statusStyle: 'classic' })).body.content, {
 		template: 'status',
-		style: 'original',
+		style: 'classic',
 	});
 	// a style picked under another template is never read
-	assert.deepEqual((await create('value', { statusStyle: 'original' })).body.content, {
+	assert.deepEqual((await create('value', { statusStyle: 'classic' })).body.content, {
 		template: 'value',
 	});
-	assert.deepEqual(await update('value', { valueStyle: 'rethink' }), {
-		body: { content: { template: 'value', style: 'rethink' } },
+	assert.deepEqual(await update('value', { valueStyle: 'bold' }), {
+		body: { content: { template: 'value', style: 'bold' } },
 		headers: mergePatch,
 	});
 	assert.deepEqual(await update('', { extraContent: '{"style": null}' }), {
