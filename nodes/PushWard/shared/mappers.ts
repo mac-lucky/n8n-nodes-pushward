@@ -203,7 +203,12 @@ function mapField(field: ContentField, value: unknown, toDate: ToDate): unknown 
 			return parseJsonObject(value, field.displayName);
 		case 'options': {
 			const picked = text(value);
-			return picked && (field.renamed?.[picked] ?? picked);
+			// own keys only: "toString" or "__proto__" from an expression must reach the API as typed
+			return picked &&
+				field.renamed &&
+				Object.prototype.hasOwnProperty.call(field.renamed, picked)
+				? field.renamed[picked]
+				: picked;
 		}
 		case 'rows': {
 			const rows = (((value as IDataObject | undefined)?.item ?? []) as IDataObject[])

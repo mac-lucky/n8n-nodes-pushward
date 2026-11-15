@@ -936,6 +936,18 @@ test('a style saved under its 0.3.0 name runs without issues and goes out under 
 	);
 });
 
+test('a style named like an Object.prototype member is sent as typed', () => {
+	for (const typed of ['toString', 'constructor', 'hasOwnProperty', '__proto__']) {
+		assert.deepEqual(
+			widget('value', {
+				valueStyle: typed,
+				valueStyleBySize: { item: [{ name: 'small', value: typed }] },
+			}),
+			{ template: 'value', style: typed, style_by_size: { small: typed } },
+		);
+	}
+});
+
 test('Style is sent only when added, and Extra Content null clears it on Update', async () => {
 	const create = (template, fields) =>
 		requestFor(operation('widget', 'create'), {
