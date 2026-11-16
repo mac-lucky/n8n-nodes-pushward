@@ -21,7 +21,7 @@ Start creates the activity when it doesn't exist yet and sets it ongoing. Pick a
 
 Live Activity templates: Alert, Approval, Board, Checklist, Countdown, Gauge, Generic, Log, Media, Steps, Timeline. Widget templates: Battery, Countdown, Flow, Gauge, Heatmap, Progress, Schedule, Stat List, Status, Trend, Value.
 
-A Checklist item's Checked starts on None, which leaves it out of the request: on Update the item keeps whatever was ticked on the phone, and a new item starts unchecked. Get returns the ticks, and once every item is ticked PushWard ends the activity. Heatmap Cells takes one number per day, oldest first; an empty entry or `null` is a day with no data, but a comma after the last value is dropped rather than read as today.
+A Checklist item's Checked starts on None, which leaves it out of the request: on Update the item keeps whatever was ticked on the phone, and a new item starts unchecked. Get returns the ticks, and once every item is ticked PushWard ends the activity, unless Auto End is off. Heatmap Cells takes one number per day, oldest first; an empty entry or `null` is a day with no data, but a comma after the last value is dropped rather than read as today.
 
 Update starts on Keep Current, which leaves the template alone. To change fields, pick the template the item already uses. Picking a different one switches the layout, and a Live Activity then loses the tiles, log lines or history the old one held.
 
