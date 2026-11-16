@@ -159,7 +159,8 @@ function toNumber(value: unknown, label: string): number | undefined {
 
 // A hole would shift every later point, so only a list with nothing in it counts as unset.
 // When entries may be null, a list of only empty entries is sent as nulls and the API rules on it.
-// A trailing comma is a typo, not one more day: "3,0,5," is three values.
+// A string ending in a comma is refused: it is either a typo or a joined list whose newest day is
+// null, and guessing wrong would move every value by one day.
 function toNumberList(
 	value: unknown,
 	label: string,
@@ -172,7 +173,11 @@ function toNumberList(
 		: !list(value);
 	if (empty) return undefined;
 	const entries = listEntries(value);
-	if (nullable && typeof value === 'string' && !entries.at(-1)) entries.pop();
+	if (nullable && typeof value === 'string' && !entries.at(-1)) {
+		throw new Error(
+			`${label} ends with an empty entry in "${text(value)}": write null for a last day without data or drop the comma, or pass the array instead of a joined string`,
+		);
+	}
 	return entries.map((entry) => {
 		if (nullable && (!entry || entry === 'null')) return null;
 		if (!entry) throw new Error(`${label} has a blank entry in "${text(value)}"`);
